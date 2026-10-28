@@ -79,10 +79,13 @@ def test_response_data_list_is_ignores_id_and_url(django_user_model):
 
 @pytest.mark.django_db
 @test_context
-def test_post_then_get_created():
+def test_post_then_get_created(django_user_model):
     post(reverse("user-list"), {"username": "grace"}, format="json")
     status_code_is(201)
-    response_location_header_is(Http.response["Location"])
+    grace = django_user_model.objects.get(username="grace")
+    response_location_header_is(
+        "http://testserver" + reverse("user-detail", args=[grace.pk])
+    )
     get_created()
     status_code_is(200)
     response_data_is(user_fields("grace"))
