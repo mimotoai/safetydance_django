@@ -1,90 +1,104 @@
 from collections import OrderedDict
 from copy import deepcopy
 from pprint import pformat
-from safetydance import step, step_data
+from django.http import HttpResponse
 from rest_framework.test import APIClient
-import pytest
+from safetydance import context_data, initializer, step_namespace
+
+__all__ = [
+    "Http",
+    "defaults", "force_authenticate", "force_login", "login", "delete", "get",
+    "head", "get_created", "options", "post", "put", "status_code_is",
+    "status_code_is_one_of", "content_type_is", "response_json_is",
+    "response_data_is", "assert_data", "response_data_list_is",
+    "response_url_is", "response_location_header_is",
+    "json_values_match", "lists_match", "dictionaries_match",
+]
+
+step = step_namespace("http")
 
 
-http_client = step_data(APIClient, initializer=APIClient)
-http_response = step_data(None)
+@context_data
+class Http:
+    client: APIClient = initializer(lambda ctx: APIClient())
+    response: HttpResponse
 
 
 @step
 def defaults(**kwargs):
-    http_client.defaults = {**http_client.defaults, **kwargs}
+    Http.client.defaults = {**Http.client.defaults, **kwargs}
 
 @step
 def force_authenticate(*args, **kwargs):
     """Can be used by rest_framework.test.APIClient"""
-    http_client.force_authenticate(*args, **kwargs)
+    Http.client.force_authenticate(*args, **kwargs)
 
 @step
 def force_login(*args, **kwargs):
     """Can be used by django.test.Client"""
-    http_client.force_login(*args, **kwargs)
+    Http.client.force_login(*args, **kwargs)
 
 @step
 def login(*args, **kwargs):
-    http_client.login(*args, **kwargs)
+    Http.client.login(*args, **kwargs)
 
 @step
 def delete(*args, **kwargs):
     '''Perform HTTP DELETE'''
-    http_response = http_client.delete(*args, **kwargs)
+    Http.response = Http.client.delete(*args, **kwargs)
 
 @step
 def get(*args, **kwargs):
     '''Perform HTTP GET'''
-    http_response = http_client.get(*args, **kwargs)
+    Http.response = Http.client.get(*args, **kwargs)
 
 @step
 def head(*args, **kwargs):
     '''Perform HTTP HEAD'''
-    http_response = http_client.head(*args, **kwargs)
+    Http.response = Http.client.head(*args, **kwargs)
 
 @step
 def get_created(*args, **kwargs):
     '''Perform HTTP GET of `location` header.'''
-    http_response = http_client.get(
-            http_response['location'],
+    Http.response = Http.client.get(
+            Http.response['location'],
             *args,
             **kwargs)
 
 @step
 def options(*args, **kwargs):
-    http_response = http_client.options(*args, **kwargs)
+    Http.response = Http.client.options(*args, **kwargs)
 
 @step
 def post(*args, **kwargs):
-    http_response = http_client.post(*args, **kwargs)
+    Http.response = Http.client.post(*args, **kwargs)
 
 @step
 def put(*args, **kwargs):
-    http_response = http_client.put(*args, **kwargs)
+    Http.response = Http.client.put(*args, **kwargs)
 
 @step
 def status_code_is(expected):
     '''
     Check that the expected status code matches the received status code
     '''
-    assert http_response.status_code == expected,\
-            pformat(http_response.data) if http_response.data is not None else ""
+    assert Http.response.status_code == expected,\
+            pformat(Http.response.data) if Http.response.data is not None else ""
 
 @step
 def status_code_is_one_of(*expected):
     '''
     Check that the expected status code matches the received status code
     '''
-    assert http_response.status_code in expected,\
-            pformat(http_response.data) if http_response.data is not None else ""
+    assert Http.response.status_code in expected,\
+            pformat(Http.response.data) if Http.response.data is not None else ""
 
 
 
 @step
 def content_type_is(expected):
-    assert 'Content-Type' in http_response
-    assert http_response['Content-Type'].startswith(expected)
+    assert 'Content-Type' in Http.response
+    assert Http.response['Content-Type'].startswith(expected)
 
 @step
 def response_json_is(expected):
@@ -93,7 +107,7 @@ def response_json_is(expected):
     body.
     '''
     content_type_is('application/json')
-    observed = http_response.json()
+    observed = Http.response.json()
     assert json_values_match(expected, observed)
 
 @step
@@ -110,9 +124,9 @@ def response_data_is(expected, excluded_fields=None):
                 obj.pop(k, None)
         return obj
 
-    self.content_type_is('application/json')
+    content_type_is('application/json')
 
-    observed = clean_item(deepcopy(http_response.data))
+    observed = clean_item(deepcopy(Http.response.data))
     expected = clean_item(deepcopy(expected))
     assert expected == observed
 
@@ -147,9 +161,9 @@ def response_data_list_is(list_expected, excluded_fields=None):
             for k in excluded_fields:
                 obj.pop(k, None)
         return obj
-    self.content_type_is('application/json')
+    content_type_is('application/json')
 
-    _list_observed = deepcopy(http_response.data)
+    _list_observed = deepcopy(Http.response.data)
     list_expected = deepcopy(list_expected)
 
     list_observed = []
@@ -176,11 +190,11 @@ def response_data_list_is(list_expected, excluded_fields=None):
 
 @step
 def response_url_is(url_expected):
-    assert http_response.url == url_expected
+    assert Http.response.url == url_expected
 
 @step
 def response_location_header_is(location_expected):
-    header = http_response['location']
+    header = Http.response['location']
     assert header == location_expected
 
 
