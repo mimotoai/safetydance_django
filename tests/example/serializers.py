@@ -6,6 +6,7 @@ from .models import Simple
 class SimpleSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Simple
+        fields = "__all__"
 
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
