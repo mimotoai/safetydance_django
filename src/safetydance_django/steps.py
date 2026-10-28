@@ -1,9 +1,13 @@
 from collections import OrderedDict
+from collections.abc import Mapping
 from copy import deepcopy
 from pprint import pformat
+from typing import TYPE_CHECKING
 from django.http import HttpResponse
-from rest_framework.test import APIClient
 from safetydance import context_data, initializer, step_namespace
+
+if TYPE_CHECKING:
+    from rest_framework.test import APIClient
 
 __all__ = [
     "Http",
@@ -18,81 +22,93 @@ __all__ = [
 step = step_namespace("http")
 
 
+def _new_api_client():
+    # Imported here: rest_framework.test reads Django settings when imported.
+    from rest_framework.test import APIClient
+
+    return APIClient()
+
+
 @context_data
 class Http:
-    client: APIClient = initializer(lambda ctx: APIClient())
+    api_client: "APIClient" = initializer(lambda ctx: _new_api_client())
     response: HttpResponse
 
 
 @step
 def defaults(**kwargs):
-    Http.client.defaults = {**Http.client.defaults, **kwargs}
+    Http.api_client.defaults = {**Http.api_client.defaults, **kwargs}
 
 @step
 def force_authenticate(*args, **kwargs):
     """Can be used by rest_framework.test.APIClient"""
-    Http.client.force_authenticate(*args, **kwargs)
+    Http.api_client.force_authenticate(*args, **kwargs)
 
 @step
 def force_login(*args, **kwargs):
     """Can be used by django.test.Client"""
-    Http.client.force_login(*args, **kwargs)
+    Http.api_client.force_login(*args, **kwargs)
 
 @step
 def login(*args, **kwargs):
-    Http.client.login(*args, **kwargs)
+    Http.api_client.login(*args, **kwargs)
 
 @step
 def delete(*args, **kwargs):
     '''Perform HTTP DELETE'''
-    Http.response = Http.client.delete(*args, **kwargs)
+    Http.response = Http.api_client.delete(*args, **kwargs)
 
 @step
 def get(*args, **kwargs):
     '''Perform HTTP GET'''
-    Http.response = Http.client.get(*args, **kwargs)
+    Http.response = Http.api_client.get(*args, **kwargs)
 
 @step
 def head(*args, **kwargs):
     '''Perform HTTP HEAD'''
-    Http.response = Http.client.head(*args, **kwargs)
+    Http.response = Http.api_client.head(*args, **kwargs)
 
 @step
 def get_created(*args, **kwargs):
     '''Perform HTTP GET of `location` header.'''
-    Http.response = Http.client.get(
+    Http.response = Http.api_client.get(
             Http.response['location'],
             *args,
             **kwargs)
 
 @step
 def options(*args, **kwargs):
-    Http.response = Http.client.options(*args, **kwargs)
+    Http.response = Http.api_client.options(*args, **kwargs)
 
 @step
 def post(*args, **kwargs):
-    Http.response = Http.client.post(*args, **kwargs)
+    Http.response = Http.api_client.post(*args, **kwargs)
 
 @step
 def put(*args, **kwargs):
-    Http.response = Http.client.put(*args, **kwargs)
+    Http.response = Http.api_client.put(*args, **kwargs)
+
+def _status_message(expected):
+    data = getattr(Http.response, "data", None)
+    return (
+        f"Expected status {expected!r}, got {Http.response.status_code}"
+        + (f":\n{pformat(data)}" if data is not None else "")
+    )
+
 
 @step
 def status_code_is(expected):
     '''
     Check that the expected status code matches the received status code
     '''
-    assert Http.response.status_code == expected,\
-            pformat(Http.response.data) if Http.response.data is not None else ""
+    assert Http.response.status_code == expected, _status_message(expected)
 
 @step
 def status_code_is_one_of(*expected):
     '''
     Check that the expected status code matches the received status code
     '''
-    assert Http.response.status_code in expected,\
-            pformat(Http.response.data) if Http.response.data is not None else ""
-
+    assert Http.response.status_code in expected, _status_message(expected)
 
 
 @step
@@ -108,7 +124,10 @@ def response_json_is(expected):
     '''
     content_type_is('application/json')
     observed = Http.response.json()
-    assert json_values_match(expected, observed)
+    assert json_values_match(expected, observed), (
+        f"Response JSON does not match.\nExpected:\n{pformat(expected)}\n"
+        f"Observed:\n{pformat(observed)}"
+    )
 
 @step
 def response_data_is(expected, excluded_fields=None):
@@ -234,7 +253,7 @@ def dictionaries_match(expected, observed):
     that don't occur in expected or its matching nested dictionary objects
     are ignored.
     '''
-    if observed is None:
+    if not isinstance(observed, Mapping):
         return False
     for key, value in expected.items():
         if not json_values_match(value, observed.get(key)):
