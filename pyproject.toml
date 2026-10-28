@@ -25,9 +25,6 @@ classifiers = [
 Documentation = "https://dcharbon.gitlab.io/safetydance_django"
 Repository = "https://gitlab.com/dcharbon/safetydance_django.git"
 
-[project.entry-points."safetydance.steps"]
-http = "safetydance_django.steps"
-
 [dependency-groups]
 test = ["pytest>=8.3.5,<9", "pytest-cov>=6.1.0,<7", "pytest-django>=4.9"]
 docs = ["sphinx>=8"]

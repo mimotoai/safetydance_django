@@ -7,8 +7,8 @@ v0.1.0
 
 **Added:**
 
-* A ``safetydance.steps`` entry point, ``http = "safetydance_django.steps"``,
-  so the steps are found as ``Given.http.get`` and so on.
+* The steps are registered at ``Given.http.get`` and so on when
+  ``safetydance_django.test`` or ``safetydance_django.steps`` is imported.
 * ``safetydance_django.test`` re-exports ``Given``, ``When``, ``Then``,
   ``And``, ``test_context`` and ``Http``.
 * The ``Http`` context data class holding ``Http.api_client`` and
@@ -21,8 +21,9 @@ v0.1.0
   Poetry release and has no changelog entry.
 * HTTP state lives in the ``Http`` context data class as ``Http.api_client`` and
   ``Http.response``. The steps are registered under the ``http`` namespace
-  through the ``safetydance.steps`` entry point, so ``Given.http.get`` works
-  without importing ``safetydance_django``.
+  when ``safetydance_django.test`` or ``safetydance_django.steps`` is
+  imported; import them in ``conftest.py`` or star-import
+  ``safetydance_django.test``.
 * The old default client received the context object as ``enforce_csrf_checks``.
   That object is truthy, so CSRF checks were effectively on. ``Http.api_client`` is
   now a plain ``APIClient()`` with CSRF checks off, as in the normal test
@@ -34,11 +35,8 @@ v0.1.0
 * Importing ``safetydance_django.steps`` no longer needs configured Django
   settings; the ``APIClient`` import is deferred until a client is created.
 * ``from safetydance_django.steps import *`` now exports only ``__all__``.
-* Use the short namespace, ``Given.http.get`` and so on. The bare names
-  (``get``, ``post``, ``put``, ``delete``, ``options``, ``head``, ``login``,
-  ``defaults`` and so on) also resolve, but they raise ``AmbiguousStep`` as
-  soon as any other step library defines the same name; safetydance imports
-  every installed ``safetydance.steps`` entry point on the first lookup.
+* The steps resolve only at the ``http`` namespace, ``Given.http.get`` and so
+  on. They have no bare names (``Given.get`` raises ``StepNotFound``).
 
 **Removed:**
 
@@ -119,9 +117,9 @@ For projects such as scrud-django and django-scoped-rbac.
      - ``get_context()`` or a ``@context_data`` field. Nested scripts no
        longer see their caller's data.
 
-Step modules that are not exposed through a ``safetydance.steps`` entry point
-register their steps only when they are imported, so import them in
-``conftest.py``.
+Step modules of your own register their steps only when they are imported, so
+import them in ``conftest.py``. A plain ``@step`` registers a bare name, and a
+conflict with an existing registration raises when you register.
 
 v0.0.5
 ====================

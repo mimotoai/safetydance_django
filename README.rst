@@ -38,12 +38,11 @@ Example
 ``reverse("simple-list")`` refers to the example app in this repository's
 tests. Substitute the URL name of one of your own views.
 
-Use the short ``http`` namespace, as in ``Given.http.get``. The bare names
-(``get``, ``post``, ``put``, ``delete``, ``options``, ``head``, ``login``,
-``defaults`` and so on) also resolve, but they raise ``AmbiguousStep`` as soon
-as any other step library defines the same name. safetydance imports every
-``safetydance.steps`` entry point (this package's included) on the first
-lookup, so any installed library counts, whether or not your test imported it.
+The steps are registered at ``Given.http.*`` (``get``, ``post``, ``put``,
+``delete``, ``options``, ``head``, ``login``, ``defaults`` and so on) when
+``safetydance_django.test`` or ``safetydance_django.steps`` is imported. Import
+one of them in ``conftest.py``, or star-import ``safetydance_django.test`` as
+above. The steps have no bare names: ``Given.get`` raises ``StepNotFound``.
 
 ``safetydance_django.test`` exports ``And``, ``Given``, ``Http``, ``Then``,
 ``When`` and ``test_context``. Put ``@test_context`` below any
@@ -53,9 +52,9 @@ state of the current test. The client is not called ``client`` because
 ``@test_context`` stores pytest fixtures by name, and pytest-django's
 ``client`` fixture would replace it.
 
-Step modules of your own that are not exposed through a ``safetydance.steps``
-entry point register their steps only when they are imported, so import them
-in ``conftest.py``.
+Step modules of your own register their steps only when they are imported, so
+import them in ``conftest.py``. A plain ``@step`` registers a bare name, and a
+conflict with an existing registration raises when you register.
 
 Documentation
 =============

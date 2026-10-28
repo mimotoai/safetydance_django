@@ -1,19 +1,16 @@
+import os
 import subprocess
 import sys
 
 from django.urls import reverse
 import pytest
+from safetydance import StepNotFound
 from safetydance_django.test import *
 
 SCRIPT = """
-import sys, django
-from django.conf import settings
-settings.configure(INSTALLED_APPS=["django.contrib.auth", "django.contrib.contenttypes", "rest_framework"])
-django.setup()
 from safetydance import Given
-assert "safetydance_django.steps" not in sys.modules
-Given.http.get
-assert "safetydance_django.steps" in sys.modules
+import safetydance_django.test
+assert Given.http.get.__module__ == "safetydance_django.steps"
 """
 
 
@@ -24,11 +21,9 @@ def test_get():
     Then.http.status_code_is(200)
 
 
-@pytest.mark.django_db
-@test_context
-def test_full_module_path():
-    When.safetydance_django.steps.get(reverse("simple-list"))
-    And.http.status_code_is(200)
+def test_full_module_path_is_not_registered():
+    with pytest.raises(StepNotFound):
+        When.safetydance_django.steps.get
 
 
 @pytest.mark.django_db
@@ -45,7 +40,13 @@ def test_star_import_exports_only_the_public_api():
         "And", "Given", "Http", "Then", "When", "test_context"}
 
 
-def test_http_namespace_loads_from_the_entry_point():
+def test_importing_the_test_module_registers_http():
+    env = {k: v for k, v in os.environ.items() if k != "DJANGO_SETTINGS_MODULE"}
     result = subprocess.run(
-        [sys.executable, "-c", SCRIPT], capture_output=True, text=True)
+        [sys.executable, "-c", SCRIPT], capture_output=True, text=True, env=env)
     assert result.returncode == 0, result.stderr
+
+
+def test_bare_names_are_not_registered():
+    with pytest.raises(StepNotFound):
+        Given.get
