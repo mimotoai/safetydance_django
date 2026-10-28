@@ -2,23 +2,44 @@
 safetydance_django
 ==================
 
+Django and Django REST framework test steps for `safetydance
+<https://pypi.org/project/safetydance/>`_. Drive an ``APIClient`` with
+``Given.http.get(...)``, ``When.http.post(...)`` and check the response with
+``Then.http.status_code_is(...)``.
 
-Add a short description here!
+Install
+=======
+
+.. code-block:: bash
+
+    pip install safetydance-django
+
+This needs Python 3.10 or later and safetydance 0.5.
+
+Example
+=======
+
+.. code-block:: python
+
+    from django.urls import reverse
+    import pytest
+    from safetydance_django.test import *
 
 
-Description
-===========
+    @pytest.mark.django_db
+    @test_context
+    def test_get():
+        Given.http.get(reverse("simple-list"))
+        Then.http.status_code_is(200)
+        assert Http.response.status_code == 200
 
-A longer description of your project goes here...
-
-
-Note
-====
-
-This project has been set up using PyScaffold 3.2.3. For details and usage
-information on PyScaffold see https://pyscaffold.org/.
+``safetydance_django.test`` exports ``And``, ``Given``, ``Http``, ``Then``,
+``When`` and ``test_context``. Put ``@test_context`` below any
+``@pytest.mark.*`` decorators and above any ``@mock.patch`` decorators.
+``Http.client`` (an ``APIClient``) and ``Http.response`` hold the HTTP state
+of the current test.
 
 Documentation
 =============
 
-Documentation on the project is at https://openteams.gitlab.io/safetydance_django/.
+Documentation on the project is at https://dcharbon.gitlab.io/safetydance_django.
