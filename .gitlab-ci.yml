@@ -4,27 +4,30 @@
 #
 # This pipeline cannot pass yet: pyproject.toml still takes safetydance from
 # the local path source `../safetydance`, which does not exist in CI. It passes
-# once that path source is removed (Task 6 of the safetydance 0.5 migration).
+# once safetydance 0.5 is on PyPI and that path source is removed.
 workflow:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 # uv's cache is keyed on uv.lock and pruned after each job, so only the wheels
-# that are still needed are stored. Copy mode because the cache and the project
+# that are still needed are stored. The Pythons uv downloads for the matrix go
+# in .uv-python, cached with it. Copy mode because the cache and the project
 # can be on different filesystems.
 variables:
   UV_CACHE_DIR: .uv-cache
+  UV_PYTHON_INSTALL_DIR: .uv-python
   UV_LINK_MODE: copy
 
 default:
   image: ghcr.io/astral-sh/uv:0.9.0-python3.12-bookworm
-  cache: &uv-cache
+  cache:
     key:
       files:
         - uv.lock
     paths:
       - .uv-cache
+      - .uv-python
   after_script:
     - uv cache prune --ci
 
@@ -42,10 +45,17 @@ test:
     - uv run --locked --no-default-groups --group test -p "$PYTHON" pytest -q --cov --cov-report=term
   coverage: '/^TOTAL.+?(\d+%)$/'
 
+# The oldest versions pyproject.toml allows of every direct dependency. The
+# lock file records the newest, so this one cannot use --locked.
+test-lowest:
+  stage: test
+  script:
+    - uv run --resolution lowest-direct --no-default-groups --group test -p "3.10" pytest -q
+
 docs:
   stage: test
   script:
-    - uv run --locked --no-default-groups --group docs sphinx-build -b html docs build/sphinx/html
+    - uv run --locked --no-default-groups --group docs sphinx-build -W -b html docs build/sphinx/html
   artifacts:
     paths:
       - build/sphinx/html
