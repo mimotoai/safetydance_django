@@ -14,7 +14,9 @@ Install
 
     pip install safetydance-django
 
-This needs Python 3.10 or later and safetydance 0.5.
+This needs Python 3.10 or later and safetydance 0.5. The example below also
+needs ``pytest`` and ``pytest-django``, which are not installed as dependencies
+of safetydance-django.
 
 Example
 =======
@@ -32,6 +34,14 @@ Example
         Given.http.get(reverse("simple-list"))
         Then.http.status_code_is(200)
         assert Http.response.status_code == 200
+
+``reverse("simple-list")`` refers to the example app in this repository's
+tests. Substitute the URL name of one of your own views.
+
+Use the short ``http`` namespace, as in ``Given.http.get``. The bare names
+(``get``, ``post``, ``put``, ``delete``, ``options``, ``head``, ``login``,
+``defaults`` and so on) also resolve, but they raise ``AmbiguousStep`` as soon
+as any other installed or imported step library defines the same name.
 
 ``safetydance_django.test`` exports ``And``, ``Given``, ``Http``, ``Then``,
 ``When`` and ``test_context``. Put ``@test_context`` below any
