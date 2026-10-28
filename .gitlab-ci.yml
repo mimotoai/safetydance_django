@@ -45,10 +45,20 @@ test:
     - uv run --locked --no-default-groups --group test -p "$PYTHON" pytest -q --cov --cov-report=term
   coverage: '/^TOTAL.+?(\d+%)$/'
 
-# The oldest versions pyproject.toml allows of every direct dependency. The
-# lock file records the newest, so this one cannot use --locked.
+# The oldest versions pyproject.toml allows of every direct dependency. It omits
+# --locked on purpose: --resolution lowest-direct re-resolves and rewrites
+# uv.lock inside the job, which is intended. Its own cache key keeps the older
+# wheels from churning the locked jobs' cache.
 test-lowest:
   stage: test
+  cache:
+    key:
+      files:
+        - uv.lock
+      prefix: lowest
+    paths:
+      - .uv-cache
+      - .uv-python
   script:
     - uv run --resolution lowest-direct --no-default-groups --group test -p "3.10" pytest -q
 

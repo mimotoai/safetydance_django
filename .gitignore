@@ -54,3 +54,4 @@ rever/
 
 # uv
 .uv-cache/
+.uv-python/

@@ -125,12 +125,14 @@ def test_client_fixture_does_not_replace_api_client(client):
 
 
 def test_steps_import_without_django_settings():
+    import os
     import subprocess
     import sys
 
+    env = {k: v for k, v in os.environ.items() if k != "DJANGO_SETTINGS_MODULE"}
     result = subprocess.run(
         [sys.executable, "-c", "import safetydance_django.steps"],
-        capture_output=True, text=True,
+        capture_output=True, text=True, env=env,
     )
     assert result.returncode == 0, result.stderr
 
@@ -366,10 +368,10 @@ def test_status_code_message_on_a_non_drf_response():
 def test_defaults_reach_the_request_and_can_be_overridden():
     defaults(HTTP_X_TEST="1")
     get(reverse("simple-list"))
-    assert Http.response.renderer_context["request"].META["HTTP_X_TEST"] == "1"
+    assert Http.response.wsgi_request.META["HTTP_X_TEST"] == "1"
     defaults(HTTP_X_TEST="2")
     get(reverse("simple-list"))
-    assert Http.response.renderer_context["request"].META["HTTP_X_TEST"] == "2"
+    assert Http.response.wsgi_request.META["HTTP_X_TEST"] == "2"
 
 
 @pytest.mark.parametrize("expected, observed, result", [
