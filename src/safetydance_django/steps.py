@@ -1,4 +1,3 @@
-from collections import OrderedDict
 from collections.abc import Mapping
 from copy import deepcopy
 from pprint import pformat
@@ -31,26 +30,41 @@ def _new_api_client():
 
 @context_data
 class Http:
+    """
+    The HTTP state of the current test.
+
+    ``api_client`` is a ``rest_framework.test.APIClient`` created on first use
+    (CSRF checks off); ``response`` is the response of the last request step and
+    is unset until one runs. The attribute is not called ``client`` because
+    pytest-django's ``client`` fixture would replace it under ``@test_context``.
+    """
+
     api_client: "APIClient" = initializer(lambda ctx: _new_api_client())
     response: HttpResponse
 
 
 @step
 def defaults(**kwargs):
+    '''Merge `kwargs` into the client's default request arguments, such as
+    ``HTTP_ACCEPT=...``, for every later request.'''
     Http.api_client.defaults = {**Http.api_client.defaults, **kwargs}
 
 @step
 def force_authenticate(*args, **kwargs):
-    """Can be used by rest_framework.test.APIClient"""
+    """Authenticate later requests as a user without logging in
+    (``APIClient.force_authenticate``)."""
     Http.api_client.force_authenticate(*args, **kwargs)
 
 @step
 def force_login(*args, **kwargs):
-    """Can be used by django.test.Client"""
+    """Log a user in through the session without a password
+    (``django.test.Client.force_login``)."""
     Http.api_client.force_login(*args, **kwargs)
 
 @step
 def login(*args, **kwargs):
+    '''Log in with credentials (``django.test.Client.login``). The result is
+    discarded, so a wrong password does not fail the step.'''
     Http.api_client.login(*args, **kwargs)
 
 @step
@@ -70,7 +84,7 @@ def head(*args, **kwargs):
 
 @step
 def get_created(*args, **kwargs):
-    '''Perform HTTP GET of `location` header.'''
+    '''Perform HTTP GET of the previous response's `Location` header.'''
     Http.response = Http.api_client.get(
             Http.response['location'],
             *args,
@@ -78,14 +92,17 @@ def get_created(*args, **kwargs):
 
 @step
 def options(*args, **kwargs):
+    '''Perform HTTP OPTIONS'''
     Http.response = Http.api_client.options(*args, **kwargs)
 
 @step
 def post(*args, **kwargs):
+    '''Perform HTTP POST'''
     Http.response = Http.api_client.post(*args, **kwargs)
 
 @step
 def put(*args, **kwargs):
+    '''Perform HTTP PUT'''
     Http.response = Http.api_client.put(*args, **kwargs)
 
 def _status_message(expected):
@@ -106,13 +123,14 @@ def status_code_is(expected):
 @step
 def status_code_is_one_of(*expected):
     '''
-    Check that the expected status code matches the received status code
+    Check that the received status code is one of the expected status codes
     '''
     assert Http.response.status_code in expected, _status_message(expected)
 
 
 @step
 def content_type_is(expected):
+    '''Check that the response has a Content-Type starting with `expected`.'''
     assert 'Content-Type' in Http.response
     assert Http.response['Content-Type'].startswith(expected)
 
@@ -132,8 +150,10 @@ def response_json_is(expected):
 @step
 def response_data_is(expected, excluded_fields=None):
     '''
-    Check that the expected response json body matches the received response
-    body.
+    Check that the response's parsed `data` equals `expected`, after removing
+    the `id` and `url` keys and any `excluded_fields` from both. The response
+    must be JSON. Unlike response_json_is, the comparison is exact: observed
+    keys that expected lacks fail it.
     '''
     def clean_item(obj):
         obj.pop('id', None)
@@ -152,8 +172,9 @@ def response_data_is(expected, excluded_fields=None):
 @step
 def assert_data(expected, observed, excluded_fields=None):
     '''
-    Check that the expected response json body matches the received response
-    body.
+    Check that `observed` equals `expected` after removing the `id` and `url`
+    keys and any `excluded_fields` from both. Works on copies; the arguments are
+    not modified.
     '''
     def clean_item(obj):
         obj.pop('id', None)
@@ -170,8 +191,10 @@ def assert_data(expected, observed, excluded_fields=None):
 @step
 def response_data_list_is(list_expected, excluded_fields=None):
     '''
-    Check that the expected response json body matches the received response
-    body.
+    Check that the response's data, a list, equals `list_expected` item by
+    item, after removing the `id` and `url` keys and any `excluded_fields` from
+    each. Items wrapped in an envelope (a dict with `etag` and `content`) are
+    unwrapped first. The response must be JSON.
     '''
     def clean_item(obj):
         obj.pop('id', None)
@@ -197,7 +220,7 @@ def response_data_list_is(list_expected, excluded_fields=None):
                 is_enveloped = False
         if is_enveloped:
             item = item['content']
-        elif isinstance(item, OrderedDict):
+        elif isinstance(item, dict):
             item = dict(item)
 
         list_observed.append(clean_item(item))
@@ -209,10 +232,12 @@ def response_data_list_is(list_expected, excluded_fields=None):
 
 @step
 def response_url_is(url_expected):
+    '''Check the `url` of a redirect response, its target.'''
     assert Http.response.url == url_expected
 
 @step
 def response_location_header_is(location_expected):
+    '''Check that the response's `Location` header equals `location_expected`.'''
     header = Http.response['location']
     assert header == location_expected
 

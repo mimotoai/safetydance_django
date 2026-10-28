@@ -5,7 +5,6 @@ safetydance prefixes, ``test_context`` and the ``Http`` context data.
 """
 from safetydance import And, Given, Then, When, test_context
 
-from . import steps  # noqa: F401  (registers the steps)
-from .steps import Http
+from .steps import Http  # importing the module registers the steps
 
 __all__ = ["And", "Given", "Http", "Then", "When", "test_context"]
