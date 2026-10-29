@@ -902,6 +902,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "packaging" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-django" },
@@ -917,6 +918,7 @@ docs = [
     { name = "sphinx", version = "9.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13'" },
 ]
 test = [
+    { name = "packaging" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-django" },
@@ -931,6 +933,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "packaging", specifier = ">=24" },
     { name = "pytest", specifier = ">=8.3.5,<9" },
     { name = "pytest-cov", specifier = ">=6.1.0,<7" },
     { name = "pytest-django", specifier = ">=4.9" },
@@ -938,6 +941,7 @@ dev = [
 ]
 docs = [{ name = "sphinx", specifier = ">=8" }]
 test = [
+    { name = "packaging", specifier = ">=24" },
     { name = "pytest", specifier = ">=8.3.5,<9" },
     { name = "pytest-cov", specifier = ">=6.1.0,<7" },
     { name = "pytest-django", specifier = ">=4.9" },

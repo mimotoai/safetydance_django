@@ -1,6 +1,11 @@
 # Pipelines run for merge requests and for the default branch only (no
-# duplicate branch + MR pipelines). `test` and `docs` run in both; `pages` (the
-# docs site) deploys, so it runs only on the default branch.
+# duplicate branch + MR pipelines). `test`, `test-lowest`, `package` and `docs`
+# run in both and `version-check` in merge requests; `publish` (PyPI) and
+# `pages` (the docs site) deploy, so they run only on the default branch.
+#
+# Releasing: a merge request that changes the package sets the version to
+# release (`uv version --bump minor`, `uv version 1.0.0`); merging it publishes
+# that version. See scripts/release.py.
 workflow:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -65,6 +70,71 @@ docs:
   artifacts:
     paths:
       - build/sphinx/html
+
+# PyPI refuses an upload whose README doesn't render; check the built metadata
+# on every pipeline rather than at publish time. The wheel is also installed
+# into a clean venv to prove it imports (without Django settings) and carries
+# the project version.
+package:
+  stage: test
+  script:
+    - uv build -q -o build/dist-check
+    - uv run --no-project --with "twine==7.0.0" twine check --strict build/dist-check/*
+    - uv venv -q build/wheel-venv
+    - uv pip install -q -p build/wheel-venv build/dist-check/*.whl
+    - |
+      expected="$(uv version --short)"
+      EXPECTED="$expected" build/wheel-venv/bin/python -c 'import os, safetydance_django, safetydance_django.steps; assert safetydance_django.__version__ == os.environ["EXPECTED"], safetydance_django.__version__'
+
+# A merge request that changes the package (src/safetydance_django/, or the
+# published parts of pyproject.toml) must raise the version above the target
+# branch's and every release on PyPI.
+version-check:
+  stage: test
+  variables:
+    TARGET: origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+  script:
+    - git fetch -q origin "$CI_MERGE_REQUEST_DIFF_BASE_SHA" "+refs/heads/${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}:refs/remotes/${TARGET}"
+    - uv run --no-project --with packaging python scripts/release.py check-bump "$CI_MERGE_REQUEST_DIFF_BASE_SHA" "$TARGET"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+# Publishes the version in pyproject.toml if it isn't on PyPI yet; merges that
+# don't change the version publish nothing.
+#
+# Only the tip of the default branch publishes: a job for a superseded commit
+# (a late or retried pipeline) exits without publishing, so older code is never
+# released under a newer version. The tag and GitLab release (vX.Y.Z) are
+# created before the upload, so a failed upload can simply be retried. A partial
+# upload (e.g. only the sdist) needs a new version.
+publish:
+  stage: deploy
+  # Serialises publish jobs: concurrent pipelines would race on the upload.
+  resource_group: publish
+  variables:
+    UV_PUBLISH_TOKEN: $UV_PYPI_ACCESS_TOKEN
+  script:
+    - git fetch -q origin "$CI_DEFAULT_BRANCH"
+    - |
+      if [ "$(git rev-parse FETCH_HEAD)" != "$CI_COMMIT_SHA" ]; then
+        echo "$CI_COMMIT_SHA is no longer the tip of ${CI_DEFAULT_BRANCH}; skipping"
+        exit 0
+      fi
+    # Exit status 10: this version is already on PyPI.
+    - |
+      status=0
+      uv run --no-project --with packaging python scripts/release.py needs-release || status=$?
+      if [ "$status" -eq 10 ]; then exit 0; fi
+      if [ "$status" -ne 0 ]; then exit "$status"; fi
+    - ': "${UV_PYPI_ACCESS_TOKEN:?}"'
+    - uv run --no-project --with packaging python scripts/release.py create-release
+    - uv build
+    - uv publish --check-url https://pypi.org/simple/
+  artifacts:
+    paths:
+      - dist
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 # GitLab Pages publishes the `public` artifact of the job named `pages`.
 pages:
