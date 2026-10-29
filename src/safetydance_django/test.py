@@ -1,21 +1,10 @@
-from safetydance_test import TestStepPrefix
-from safetydance_test.step_extension import all_steps_as_step_extensions_from
-from type_extensions import extension_property
-from . import steps
+"""The one-line import for test modules: ``from safetydance_django.test import *``.
 
+Importing this module registers the ``http`` steps and brings in the
+safetydance prefixes, ``test_context`` and the ``Http`` context data.
+"""
+from safetydance import And, Given, Then, When, test_context
 
-class Http:
-    '''
-    Context and steps for interacting with HTTP web services.
-    '''
-    ...
+from .steps import Http  # importing the module registers the steps
 
-
-_HTTP = Http()
-
-@extension_property
-def http(self: TestStepPrefix) -> Http:
-    return _HTTP
-
-
-all_steps_as_step_extensions_from(steps, target_type=Http)
+__all__ = ["And", "Given", "Http", "Then", "When", "test_context"]
