@@ -30,10 +30,6 @@ test = ["pytest>=8.3.5,<9", "pytest-cov>=6.1.0,<7", "pytest-django>=4.9"]
 docs = ["sphinx>=8"]
 dev = [{ include-group = "test" }, { include-group = "docs" }]
 
-# Temporary: remove this source once safetydance 0.5 is on PyPI.
-[tool.uv.sources]
-safetydance = { path = "../safetydance", editable = true }
-
 [build-system]
 requires = ["uv_build>=0.9.0,<0.10.0"]
 build-backend = "uv_build"

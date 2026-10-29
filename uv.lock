@@ -595,7 +595,7 @@ name = "exceptiongroup"
 version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.12'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/50/79/66800aadf48771f6b62f7eb014e352e5d06856655206165d775e675a02c9/exceptiongroup-1.3.1.tar.gz", hash = "sha256:8b412432c6055b0b7d14c310000ae93352ed6754f70fa8f7c34141f91c4e3219", size = 30371, upload-time = "2025-11-21T23:01:54.787Z" }
 wheels = [
@@ -883,38 +883,11 @@ wheels = [
 [[package]]
 name = "safetydance"
 version = "0.5.0"
-source = { editable = "../safetydance" }
-
-[package.metadata]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "docutils", specifier = ">=0.21" },
-    { name = "ipykernel", specifier = ">=6" },
-    { name = "jupyter-book", specifier = ">=2.1.7,<3" },
-    { name = "mypy", specifier = ">=1.18" },
-    { name = "nox", specifier = ">=2025.2.9" },
-    { name = "packaging", specifier = ">=24" },
-    { name = "pytest", specifier = ">=8.3.5,<9" },
-    { name = "pytest-cov", specifier = ">=6.1.0,<7" },
-    { name = "pytest-randomly", specifier = ">=3.15" },
-    { name = "sphinx", specifier = ">=8" },
-    { name = "sphinx-rtd-theme", specifier = ">=3" },
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/50/c1/9b83510a0336edea0be15588ce0645c91f1cef298eb02e0326face4908c3/safetydance-0.5.0.tar.gz", hash = "sha256:b5154f34928db0e9bf0079d924f7f8c4d92792ccc2c7074c2f2984d9e0634527", size = 39176, upload-time = "2026-10-29T00:06:08.582Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e9/27/4614885865529eab2049f9ad3ca291a81271a243a22734e40d3683468b5f/safetydance-0.5.0-py3-none-any.whl", hash = "sha256:b7e940333b22b07b53781f97cd775838b34dd6079d2187ee4c5b1f86993a06ad", size = 18116, upload-time = "2026-10-29T00:06:07.498Z" },
 ]
-docs = [
-    { name = "ipykernel", specifier = ">=6" },
-    { name = "jupyter-book", specifier = ">=2.1.7,<3" },
-    { name = "sphinx", specifier = ">=8" },
-    { name = "sphinx-rtd-theme", specifier = ">=3" },
-]
-test = [
-    { name = "docutils", specifier = ">=0.21" },
-    { name = "packaging", specifier = ">=24" },
-    { name = "pytest", specifier = ">=8.3.5,<9" },
-    { name = "pytest-cov", specifier = ">=6.1.0,<7" },
-    { name = "pytest-randomly", specifier = ">=3.15" },
-]
-typing = [{ name = "mypy", specifier = ">=1.18" }]
 
 [[package]]
 name = "safetydance-django"
@@ -953,7 +926,7 @@ test = [
 requires-dist = [
     { name = "django", specifier = ">=4.2" },
     { name = "djangorestframework", specifier = ">=3.15" },
-    { name = "safetydance", editable = "../safetydance" },
+    { name = "safetydance", specifier = ">=0.5,<0.6" },
 ]
 
 [package.metadata.requires-dev]

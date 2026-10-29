@@ -1,10 +1,6 @@
 # Pipelines run for merge requests and for the default branch only (no
 # duplicate branch + MR pipelines). `test` and `docs` run in both; `pages` (the
 # docs site) deploys, so it runs only on the default branch.
-#
-# This pipeline cannot pass yet: pyproject.toml still takes safetydance from
-# the local path source `../safetydance`, which does not exist in CI. It passes
-# once safetydance 0.5 is on PyPI and that path source is removed.
 workflow:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
